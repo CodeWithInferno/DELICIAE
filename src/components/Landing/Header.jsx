@@ -18,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
-export default function LuxuryHeader() {
+export default function LuxuryHeader({ featuredProducts = [] }) {
   const [activeMenu, setActiveMenu] = useState(null)
   const [isScrolled, setIsScrolled] = useState(false)
   const { user, error, isLoading } = useUser()
@@ -146,9 +146,7 @@ export default function LuxuryHeader() {
 
           <div className="relative">
             <ShoppingBag className="w-5 h-5 cursor-pointer hover:text-gray-500 transition-colors duration-300" />
-            <span className="absolute -top-2 -right-2 bg-black text-white text-xs w-4 h-4 flex items-center justify-center rounded-full">
-              0
-            </span>
+
           </div>
         </div>
       </header>

@@ -1,30 +1,92 @@
-import { getSession } from '@auth0/nextjs-auth0';
-import { PrismaClient } from '@prisma/client';
+import { NextResponse } from "next/server";
+import { prisma } from "../../../../lib/prisma";
 
-const prisma = new PrismaClient();
+export async function POST(request) {
+  try {
+    // 1. Parse the request body
+    const {
+      userEmail,  // Received from the client
+      productId,
+      title,
+      variant,
+      size,
+      price,
+      quantity,
+    } = await request.json();
 
-export default async function handler(req, res) {
-  if (req.method !== "POST") return res.status(405).end();
+    // 2. Basic check: if we have no email, return 401
+    if (!userEmail) {
+      return new NextResponse("Unauthorized (no user email)", { status: 401 });
+    }
 
-  const session = await getSession(req, res);
-  if (!session?.user) return res.status(401).end();
+    // 3. Find or create the user in your DB
+    let dbUser = await prisma.user.findUnique({
+      where: { email: userEmail },
+    });
 
-  const { productId, quantity } = req.body;
-  const user = await prisma.user.findUnique({ where: { auth0Id: session.user.sub } });
+    if (!dbUser) {
+      dbUser = await prisma.user.create({
+        data: {
+          email: userEmail,
+          // Add additional fields here if needed
+        },
+      });
+    }
 
-  if (!user) return res.status(404).json({ error: "User not found" });
+    // 4. Find or create a Cart for this user
+    let cart = await prisma.cart.findUnique({
+      where: { userId: dbUser.id },
+      include: { items: true },
+    });
 
-  let cart = await prisma.cart.upsert({
-    where: { userId: user.id },
-    update: {},
-    create: { userId: user.id },
-  });
+    if (!cart) {
+      cart = await prisma.cart.create({
+        data: {
+          userId: dbUser.id,
+        },
+        include: { items: true },
+      });
+    }
 
-  await prisma.cartItem.upsert({
-    where: { cartId_productId: { cartId: cart.id, productId } },
-    update: { quantity: { increment: quantity } },
-    create: { cartId: cart.id, productId, quantity },
-  });
+    // 5. Check if CartItem already exists (matching product, variant, size)
+    const existingCartItem = await prisma.cartItem.findFirst({
+      where: {
+        cartId: cart.id,
+        productId,
+        variant,
+        size,
+      },
+    });
 
-  res.json({ message: "Added to cart" });
+    let cartItem;
+    if (existingCartItem) {
+      // If found, increment quantity
+      cartItem = await prisma.cartItem.update({
+        where: { id: existingCartItem.id },
+        data: {
+          quantity: existingCartItem.quantity + (quantity || 1),
+        },
+      });
+    } else {
+      // Otherwise, create a new item
+      cartItem = await prisma.cartItem.create({
+        data: {
+          cartId: cart.id,
+          productId,
+          title,
+          variant,
+          size,
+          price,
+          quantity: quantity || 1,
+        },
+      });
+    }
+
+    // 6. Return the newly upserted item
+    return NextResponse.json({ cartItem }, { status: 201 });
+    
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    return new NextResponse("Internal Server Error", { status: 500 });
+  }
 }

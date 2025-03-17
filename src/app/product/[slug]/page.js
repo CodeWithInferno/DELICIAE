@@ -9,10 +9,13 @@ import { motion } from "framer-motion";
 import { ChevronDown, ShoppingBag } from "lucide-react";
 import { PortableText } from "@portabletext/react";
 import Image from "next/image";
+import { useUser } from "@auth0/nextjs-auth0/client";
+
 
 export default function ProductPage() {
   const { slug } = useParams();
   const router = useRouter();
+  const { user, isLoading } = useUser();    // <---- Grab user from Auth0
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImage, setSelectedImage] = useState(0);
@@ -60,6 +63,56 @@ export default function ProductPage() {
 
     fetchProduct();
   }, [slug]);
+
+
+  const handleAddToCart = async () => {
+    if (!selectedColor || !selectedSize) {
+      alert("Please select a color and size before adding to cart.");
+      return;
+    }
+    if (isLoading) {
+      console.log("Checking user auth status...");
+      return;
+    }
+    if (!user) {
+      // If no user, send them to login
+      router.push("/api/auth/login");
+      return;
+    }
+    try {
+      // Build the payload from your product data and states
+      const payload = {
+        userEmail: user.email,
+        productId: product._id,        // The Sanity _id
+        title: product.title,          // The product's title
+        variant: selectedColor,        // Or however you're labeling color
+        size: selectedSize,            // The user-chosen size
+        price: product.price,          // Product price
+        quantity: 1,                   // Default to 1 for now
+      };
+  
+      // Make the POST request to your route handler
+      const res = await fetch("/api/cart/add", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+  
+      if (res.ok) {
+        // Item added successfully
+        console.log("Added to cart!");
+        // Optionally: show a success toast or update local cart state
+      } else if (res.status === 401) {
+        // User not authenticated => redirect to login
+        router.push("/api/auth/login");
+      } else {
+        console.error("Failed to add item.");
+      }
+    } catch (error) {
+      console.error("Error adding to cart:", error);
+    }
+  };
+  
 
   if (loading)
     return (
@@ -231,10 +284,14 @@ export default function ProductPage() {
 
               {/* Add to cart button */}
               <div className="mb-4">
-                <button className="w-full bg-[#1a1a1a] text-white py-3 uppercase text-sm tracking-widest flex items-center justify-center gap-2">
-                  <ShoppingBag size={16} />
-                  Add to cart
-                </button>
+              <button
+  onClick={handleAddToCart}
+  className="w-full bg-[#1a1a1a] text-white py-3 uppercase text-sm tracking-widest flex items-center justify-center gap-2"
+>
+  <ShoppingBag size={16} />
+  Add to cart
+</button>
+
               </div>
 
               {/* Product description */}

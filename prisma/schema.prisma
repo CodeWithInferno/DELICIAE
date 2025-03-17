@@ -33,11 +33,19 @@ model Cart {
 }
 
 model CartItem {
-  id        String   @id @default(uuid())
-  cart      Cart     @relation(fields: [cartId], references: [id])
-  cartId    String
-  productId String
-  quantity  Int
+  id            String  @id @default(uuid())
+  cart          Cart    @relation(fields: [cartId], references: [id])
+  cartId        String
+
+  // The Sanity product reference
+  productId     String
+  // Additional fields
+  title         String?
+  price         Float?
+  variant       String?
+  size          String?
+  
+  quantity      Int
 }
 
 model Order {
