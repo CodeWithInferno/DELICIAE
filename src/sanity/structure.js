@@ -46,7 +46,9 @@ export const structure = (S) =>
 
       // Dynamically list any other document types that are not explicitly defined above
       ...S.documentTypeListItems().filter(
-        (item) =>
+        
+        (item) => {
+          console.log('Document type:', item.getId());
           item.getId() &&
           ![
             'product',
@@ -59,6 +61,7 @@ export const structure = (S) =>
             'review',
             'lookbook',
           ].includes(item.getId())
+        }
       ),
     ]);
 
