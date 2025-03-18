@@ -37,10 +37,11 @@ import subcategory from "./subcategory";
 import brand from "./brand";
 import collection from "./collection";
 import inventory from "./inventory";
+import header from "./header"
 import review from "./review";
 import lookbook from "./lookbook";
 import banner from "./banner.js";
 
 export const schema = {
-  types: [product, productCategory, subcategory, brand, collection, inventory, review, lookbook, banner],
+  types: [product, productCategory, subcategory, brand, collection, inventory,header, review, lookbook, banner],
 };

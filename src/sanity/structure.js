@@ -39,16 +39,22 @@ export const structure = (S) =>
       S.listItem()
         .title('Banners')
         .child(S.documentTypeList('banner').title('Banners')),
+      
+        S.listItem()
+        .title('Header Configuration')
+        .child(
+          S.documentTypeList('header').title('Header')
+        ),
+      
 
       
 
       S.divider(),
 
       // Dynamically list any other document types that are not explicitly defined above
-      ...S.documentTypeListItems().filter(
-        
-        (item) => {
-          console.log('Document type:', item.getId());
+      ...S.documentTypeListItems().filter((item) => {
+        console.log('Document type:', item.getId())
+        return (
           item.getId() &&
           ![
             'product',
@@ -60,9 +66,10 @@ export const structure = (S) =>
             'inventory',
             'review',
             'lookbook',
+            'header',
           ].includes(item.getId())
-        }
-      ),
+        )
+      }),
     ]);
 
 export default structure;
